@@ -10,7 +10,7 @@ https://dl.acm.org/citation.cfm?id=1455531
 
 def hash_fun(val_1, val_2, val_opt=None):
     """
-    Concats values and hashes using md5. \\
+    Concats values and hashes using MD5. \\
     hash = hash_fun(val_1||val_opt||val_2)
 
     Args:
