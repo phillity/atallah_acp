@@ -1,5 +1,4 @@
-import hashlib
-import binascii
+from hashlib import md5
 from Crypto.Cipher import AES
 
 """
@@ -29,7 +28,7 @@ def hash_fun(val_1, val_2, val_opt=None):
     else:
         message = val_1 + val_2
 
-    return hashlib.md5(message.encode("utf-8")).hexdigest()
+    return md5(message.encode("utf-8")).hexdigest()
 
 
 def encrypt(r_ij, t_j, k_j, nonce=bytes([42])):

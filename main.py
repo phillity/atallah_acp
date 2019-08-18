@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from atallah import hash_fun, encrypt, decrypt
-import hashlib
+from hashlib import md5
 import os
 
 
@@ -14,14 +14,14 @@ if __name__ == "__main__":
     print("Objects: " + str(df.columns.values))
 
     # node i data
-    s_i = hashlib.md5(os.urandom(16)).hexdigest()
-    l_i = hashlib.md5(os.urandom(16)).hexdigest()
+    s_i = md5(os.urandom(16)).hexdigest()
+    l_i = md5(os.urandom(16)).hexdigest()
     t_i = hash_fun(s_i, l_i, val_opt="0")
     k_i = hash_fun(s_i, l_i, val_opt="1")
 
     # node j data
-    s_j = hashlib.md5(os.urandom(16)).hexdigest()
-    l_j = hashlib.md5(os.urandom(16)).hexdigest()
+    s_j = md5(os.urandom(16)).hexdigest()
+    l_j = md5(os.urandom(16)).hexdigest()
     t_j = hash_fun(s_j, l_j, val_opt="0")
     k_j = hash_fun(s_j, l_j, val_opt="1")
 
