@@ -22,6 +22,11 @@ def hash_fun(val_1, val_2, val_opt=None):
     Returns:
         hex digest (string): the resulting hash.
     """
+    if val_1.startswith("0x"):
+        val_1 = val_1[2:]
+    if val_2.startswith("0x"):
+        val_2 = val_2[2:]
+
     message = ""
     if val_opt:
         message = val_1 + val_opt + val_2
