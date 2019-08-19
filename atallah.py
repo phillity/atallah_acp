@@ -1,6 +1,5 @@
 from hashlib import md5
 from Crypto.Cipher import AES
-
 """
 'Dynamic and Efficient Key Management for Access Hierarchies'
 M. Atallah, et. al.

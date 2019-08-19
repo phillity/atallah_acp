@@ -1,6 +1,8 @@
-from atallah import F, Enc, Dec
-import hashlib
 import os
+from hashlib import md5
+from acp import User, ACP
+from atallah import hash_fun, encrypt, decrypt
+
 
 """
 Notes about notation:
@@ -18,25 +20,29 @@ private:
 
 
 class Node:
-    def __init__(self, name):
+    def __init__(self, name, users):
         """
         Constructor for node. Will use urandom and md5 hash to generate node
-        label (l_i) and secret value (__s_i). Each node contains a list of all
+        label (l_i) and secret value (s_i). Each node contains a list of all
         the edges to it's child nodes.
 
         Args:
             name (string): name to identify node
+            users (list): list of users assigned to node at initialization
 
         Returns:
             N/A
         """
-        self.l_i = hashlib.md5(os.urandom(16)).hexdigest()
-        self.__s_i = hashlib.md5(os.urandom(16)).hexdigest()
-        self.edges = {}
         self.name = name
+        self.users = users
+        self.l_i = md5(os.urandom(16)).hexdigest()
+        self.__s_i = md5(os.urandom(16)).hexdigest()
+        self.acp = ACP(self.__s_i)
+        self.edges = {}
 
-    def update_s_i(self):
-        self.s_i = hashlib.md5(os.urandom(16)).hexdigest()
+    def update_secret(self):
+        self.__s_i = md5(os.urandom(16)).hexdigest()
+        self.acp = ACP(self.__s_i)
 
     def get_t_i(self):
         """
@@ -46,10 +52,10 @@ class Node:
             N/A
 
         Returns:
-            hex digest (string): hash of __s_i + "0" + l_i
+            hex digest (string): hash of s_i + "0" + l_i
         """
-        # t_i = F_s_i(0||l_i)
-        return F(self.__s_i, self.l_i, val_opt="0")
+        # t_i = hash_fun(s_i||0||l_i)
+        return hash_fun(self.__s_i, self.l_i, val_opt="0")
 
     def get_k_i(self):
         """
@@ -59,10 +65,10 @@ class Node:
             N/A
 
         Returns:
-            hex digest (string): hash of __si_i + "1" + l_i
+            hex digest (string): hash of s_i + "1" + l_i
         """
-        # k_i = F_s_i(1||l_i)
-        return F(self.__s_i, self.l_i, val_opt="1")
+        # k_i = hash_fun(s_i||1||l_i)
+        return hash_fun(self.__s_i, self.l_i, val_opt="1")
 
 
 class Edge:
@@ -81,34 +87,41 @@ class Edge:
         Returns:
             N/A
         """
-        # r_ij = F_ti(l_j)
-        self.__r_ij = F(t_i, l_j)
-        # y_ij = Enc_r_ij(t_j||k_j)
-        self.y_ij = Enc(self.__r_ij, t_j, k_j)
+        # r_ij = hash_fun(t_i||l_j)
+        self.__r_ij = hash_fun(t_i, l_j)
+        # y_ij = AES.encrypt{r_ij}(t_j||k_j)
+        self.y_ij = encrypt(self.__r_ij, t_j, k_j)
 
     def update_r_ij(self, t_i, l_j):
-        self.r_ij = F(t_i, l_j)
+        self.r_ij = hash_fun(t_i, l_j)
 
     def update_y_ij(self, t_j, k_j):
-        self.y_ij = Enc(self.__r_ij, t_j, k_j)
+        self.y_ij = encrypt(self.__r_ij, t_j, k_j)
 
 
 class DAG:
-    def __init__(self, input_matrix):
+    def __init__(self, input_matrix, node_names, node_user_map):
         """
         Constructor for DAG. Takes in adjacency list matrix input from main.py
 
         Args:
             input_matrix (list): list contains another list of zeros and ones
-                                that define edges between nodes
+                                 that define edges between nodes
 
         Returns:
             N/A
         """
         self.node_list = {}
-        self.input_matrix = input_matrix
 
-    def add_node(self, name):
+        for node_name in node_names:
+            self.add_node(node_name, node_user_map[node_name])
+
+        for i in range(len(input_matrix)):
+            for j in range(len(input_matrix[i])):
+                if(input_matrix[i][j] == 1):
+                    self.add_edge(node_names[i], node_names[j])
+
+    def add_node(self, name, users):
         """
         Adds a Node object to the node_list dictionary on the DAG.
 
@@ -118,7 +131,8 @@ class DAG:
         Returns:
             N/A
         """
-        self.node_list[name] = Node(name)
+        if name not in node_list.keys():
+            self.node_list[name] = Node(name, users)
 
     def add_edge(self, paren_node, child_node):
         """
@@ -149,28 +163,8 @@ class DAG:
         if not self.is_cyclic():
             return True
         else:
-            # self.del_edge(paren_node, child_node)
             self.node_list[paren_node].edges.pop(child_node)
             return False
-
-    def create_graph(self):
-        """
-        Uses data stored in input_matrix variable to create a DAG.
-        Use the index of input_matrix as the name of the nodes here.
-
-        Args:
-            N/A
-
-        Returns:
-            N/A
-        """
-        for i in range(len(self.input_matrix)):
-            self.add_node(str(i))
-
-        for i in range(len(self.input_matrix)):
-            for j in range(len(self.input_matrix[i])):
-                if(self.input_matrix[i][j] == 1):
-                    self.add_edge(str(i), str(j))
 
     def have_path(self, src_node, des_node):
         """
@@ -183,13 +177,6 @@ class DAG:
         Returns:
             boolean: True or False depending on if there is a valid path
         """
-        # if src_node == des_node:
-        #     return True
-        # for nodes in self.node_list[src_node].edges.keys():
-        #     if self.have_path(nodes, des_node):
-        #         return True
-        # return False
-
         visited = set()
         queue = []
         # visit the first node and place on queue
@@ -262,20 +249,17 @@ class DAG:
         visited[node] = True
         rec_stack[node] = True
 
-        """
-        Recur for all neighbours if any neighbour is visited
-        and in recStack then graph is cyclic
-        """
+        # Recur for all neighbours if any neighbour is visited
+        # and in recStack then graph is cyclic
         for children in self.node_list[node].edges.keys():
             if visited[children] is False:
                 if self.is_cyclic_util(children, visited, rec_stack):
                     return True
             elif rec_stack[children]:
                 return True
-        """
-        The node needs to be poped from
-        recursion stack before function ends
-        """
+
+        # The node needs to be poped from
+        # recursion stack before function ends
         rec_stack[node] = False
         return False
 
@@ -330,8 +314,6 @@ class DAG:
             N/A
 
         """
-        print(f"parent_node: {parent_node}\nchild_node: {child_node}")
-
         # generate a new ID for parent and compute new k
         # update publicID for all the decs of role
         # for all the roles involved, find the pred sets and update edge keys
@@ -369,7 +351,7 @@ class DAG:
                 self.del_edge(node_name, node)
         self.node_list.pop(node)
 
-    def update_secret_i(self, node):
+    def update_node_secret(self, node):
         """
         Update the secret key for a node and then compute the new private key.
         Also update edge keys to reflect this change.
@@ -383,7 +365,7 @@ class DAG:
         """
         # update the secret key first, then compute
         # the new private key for the role
-        self.node_list[node].update_s_i()
+        self.node_list[node].update_secret()
 
         for pred in self.predecessor(node):
             self.node_list[pred].edges[node].update_r_ij(
@@ -399,6 +381,20 @@ class DAG:
                 self.node_list[children].get_t_i(),
                 self.node_list[children].get_k_i())
 
+    def remove_node_user(self, node, username):
+        idx = -1
+        for i, user in enumerate(self.node_list[node].users):
+            if user.username == username:
+                idx = i
+        if idx > -1:
+            self.node_list[node].users.pop(idx)
+        self.update_node_secret(node)
+
+    def add_node_user(self, node, user):
+        self.node_list[node].users.append(user)
+        self.update_node_secret(node)
+
+    '''
     def rev_user(self, access_list):
         """
         Doesn't handle user level operations. Updates keys and labels at
@@ -426,6 +422,7 @@ class DAG:
                 self.node_list[pred].edges[node].update_y_ij(
                     self.node_list[node].get_t_i(),
                     self.node_list[node].get_k_i())
+    '''
 
 # def ancestory(v_i, graph):
 #     """

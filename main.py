@@ -5,24 +5,57 @@ from hashlib import md5
 from acp import User, ACP
 from dag import Node, Edge, DAG
 from atallah import hash_fun, encrypt, decrypt
+from Crypto.Cipher import AES
+
+
+def encrypt_data(graph, dataset, node_object_map):
+    for key, val in node_object_map.items():
+        node = graph.node_list[key]
+        k_i = node.get_k_i()
+        aes = AES.new(bytes.fromhex(k_i), AES.MODE_EAX, nonce=bytes([42]))
+
+        for col in val:
+            data = dataset[val].values
+            for i in range(data.shape[0]):
+                data[i], _ = aes.encrypt_and_digest(data[i].encode())
+
+    return dataset
 
 
 if __name__ == "__main__":
-    '''
     adjaceny_matrix = np.array([[1, 1, 1, 0],
                                 [0, 1, 0, 1],
                                 [0, 0, 1, 1],
                                 [0, 0, 0, 1]])
-    df = pd.read_csv("breast-cancer.data")
-    print("Objects: " + str(df.columns.values))
-    '''
 
+    node_names = ["CEO", "Manager", "Team Lead", "Worker"]
+    node_user_map = {}
+    for node_name in node_names:
+        users = [User(md5(os.urandom(4)).hexdigest(),
+                 md5(os.urandom(16)).hexdigest()) for i in range(10)]
+        node_user_map[node_name] = users
+
+    graph = DAG(adjaceny_matrix, node_names, node_user_map)
+
+    df = pf.read_csv("breast-cancer.data")
+    print("Objects:" + str(df.columns.values))
+    node_object_map = {}
+    node_object_map["CEO"] = ["Object 1", "Object 2", "Object 3"]
+    node_object_map["Manager"] = ["Object 4", "Object 5"]
+    node_object_map["Team Lead"] = ["Object 6", "Object 7"]
+    node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
+    encrypted_dataset = encrypt_data(graph, df, node_object_map)
+
+
+
+    '''
     acp_dict = {}
     roles = ["CEO", "Manager", "Team Lead", "Worker"]
     for role in roles:
         users = [User(md5(os.urandom(4)).hexdigest(),
                  md5(os.urandom(16)).hexdigest()) for i in range(10)]
         acp_dict[role] = ACP(role, users)
+        # call node constructor here with role name and users (rather than ACP constructor)
 
     # CEO node data
     SID_i = acp_dict["CEO"].users[0].get_SID()
@@ -64,3 +97,4 @@ if __name__ == "__main__":
     # print the graph
     for key, node_obj in graph.node_list.items():
         print(f"{key}: {node_obj.edges.keys()}")
+    '''
