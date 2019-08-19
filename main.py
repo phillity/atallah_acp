@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from hashlib import md5
 from acp import User, ACP
+from dag import Node, Edge, DAG
 from atallah import hash_fun, encrypt, decrypt
 
 
@@ -56,3 +57,10 @@ if __name__ == "__main__":
     t_j, k_j = decrypt(r_ij, y_ij)
     print(t_j)
     print(k_j)
+
+    # testing DAG
+    graph = DAG(adjaceny_matrix)
+    graph.create_graph()
+    # print the graph
+    for key, node_obj in graph.node_list.items():
+        print(f"{key}: {node_obj.edges.keys()}")
