@@ -1,5 +1,6 @@
 import os
-from functools import reduce
+import numpy as np
+from itertools import combinations
 from hashlib import md5
 from Crypto.Util import number
 
@@ -26,24 +27,39 @@ class ACP:
         self.users = users
         self.z = hex(number.getRandomInteger(128))
         self.q = hex(number.getPrime(128))
-        self.__A_x = self.__get_A_x()
         self.__K = hex(number.getRandomInteger(128))
+        self.coefficients = self.__get_coefficients()
 
-    def __get_A_x(self):
-        A_x = []
+        # Make sure key value is smaller than prime used for modulo
+        while int(self.__K, 16) < int(self.q, 16):
+            self.__K = hex(number.getRandomInteger(128))
+
+    def __get_coefficients(self):
+        SIDs = []
         for user in self.users:
             message = user.get_SID() + self.z
-            A_x.append(md5(message.encode("utf-8")).hexdigest())
-        return A_x
+            SIDs.append(-int(md5(message.encode("utf-8")).hexdigest(), 16))
 
-    def get_P_x(self, SID):
+        coefficients = []
+        for i in range(0, len(SIDs) + 1):
+            SID_comb = combinations(SIDs, i)
+            poly_term = 0
+            for comb in SID_comb:
+                product = 1
+                for term in comb:
+                    product = (product * term) % int(self.q, 16)
+                poly_term = (poly_term + product) % int(self.q, 16)
+            coefficients.append(poly_term)
+
+        coefficients[-1] = (coefficients[-1] +
+                            int(self.__K, 16)) % int(self.q, 16)
+
+        return coefficients
+
+    def evaluate_polynomial(self, SID):
         message = SID + self.z
-        x = md5(message.encode("utf-8")).hexdigest()
-
-        P_x = reduce(lambda x, y: x * y,
-                     [int(x, 16) - int(val, 16) for val in self.__A_x])
-        P_x = (P_x + int(self.__K, 16)) % int(self.q, 16)
-        return hex(P_x)
+        x = int(md5(message.encode("utf-8")).hexdigest(), 16)
+        return hex(np.poly1d(self.coefficients)(x) % int(self.q, 16))
 
     def __update_secret(self):
         self.__K = hex(number.getRandomInteger(128))
@@ -55,5 +71,5 @@ class ACP:
                 idx = i
         if idx > -1:
             self.users = self.users.pop(idx)
-        self.__get_A_x()
         self.__update_secret()
+        self.__get_coefficients()

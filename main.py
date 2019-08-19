@@ -25,20 +25,20 @@ if __name__ == "__main__":
 
     # CEO node data
     SID_i = acp_dict["CEO"].users[0].get_SID()
-    s_i = acp_dict["CEO"].get_P_x(SID_i)
+    s_i = acp_dict["CEO"].evaluate_polynomial(SID_i)
     for user in acp_dict["CEO"].users:
         SID_j = user.get_SID()
-        assert(s_i == acp_dict["CEO"].get_P_x(SID_j))
+        assert(s_i == acp_dict["CEO"].evaluate_polynomial(SID_j))
     l_i = md5(os.urandom(16)).hexdigest()
     t_i = hash_fun(s_i, l_i, val_opt="0")
     k_i = hash_fun(s_i, l_i, val_opt="1")
 
     # Manager node data
     SID_i = acp_dict["Manager"].users[0].get_SID()
-    s_j = acp_dict["Manager"].get_P_x(SID_i)
+    s_j = acp_dict["Manager"].evaluate_polynomial(SID_i)
     for user in acp_dict["Manager"].users:
         SID_j = user.get_SID()
-        assert(s_j == acp_dict["Manager"].get_P_x(SID_j))
+        assert(s_j == acp_dict["Manager"].evaluate_polynomial(SID_j))
     l_j = md5(os.urandom(16)).hexdigest()
     t_j = hash_fun(s_j, l_j, val_opt="0")
     k_j = hash_fun(s_j, l_j, val_opt="1")
