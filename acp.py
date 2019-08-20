@@ -33,7 +33,7 @@ class ACP:
 
     def get_coefficients(self, users):
         SIDs = []
-        for user in self.users:
+        for user in users:
             message = user.get_SID() + self.z
             SIDs.append(-int(md5(message.encode("utf-8")).hexdigest(), 16))
 
@@ -53,10 +53,10 @@ class ACP:
 
         return coefficients
 
-    def evaluate_polynomial(self, SID):
+    def evaluate_polynomial(self, coefficients, SID):
         message = SID + self.z
         x = int(md5(message.encode("utf-8")).hexdigest(), 16)
-        return hex(np.poly1d(self.coefficients)(x) % int(self.q, 16))
+        return hex(np.poly1d(coefficients)(x) % int(self.q, 16))
 
     """
     def __update_secret(self):

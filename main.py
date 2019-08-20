@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import codecs
 from hashlib import md5
 from acp import User, ACP
 from dag import Node, Edge, DAG
@@ -8,19 +9,42 @@ from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
 
 
-def encrypt_data(graph, dataset, node_object_map):
-    for key, val in node_object_map.items():
-        node = graph.node_list[key]
+def encrypt_data_v1(graph, data, columns, node_object_map):
+    for node_name, objects in node_object_map.items():
+        node = graph.node_list[node_name]
         k_i = node.get_k_i()
-        aes = AES.new(bytes.fromhex(k_i), AES.MODE_EAX, nonce=bytes([42]))
 
-        for col in val:
-            data = dataset[val].values
-            for i in range(data.shape[0]):
-                data[i], _ = aes.encrypt_and_digest(data[i].encode())
+        for obj in objects:
+            idx = columns.index(obj)
+            for i in range(data[:, idx].shape[0]):
+                aes = AES.new(bytes.fromhex(k_i),
+                              AES.MODE_EAX,
+                              nonce=bytes([42]))
+                plain_text = codecs.encode(data[i, idx].encode(),
+                                           "hex").decode()
+                cipher_text, _ = (
+                    aes.encrypt_and_digest(bytes.fromhex(plain_text))
+                )
+                data[i, idx] = cipher_text.hex()
 
-    return dataset
+    return data
 
+
+def decrypt_data_v1(data, columns, target_node, node_object_map, private_key):
+    objects = node_object_map[target_node]
+    decrypted_data = np.zeros((data.shape[0], len(objects))).astype(str)
+
+    for j, obj in enumerate(objects):
+        idx = columns.index(obj)
+        for i in range(data[:, idx].shape[0]):
+            aes = AES.new(bytes.fromhex(private_key),
+                          AES.MODE_EAX,
+                          nonce=bytes([42]))
+            cipher_text = data[i, idx]
+            plain_text = aes.decrypt(bytes.fromhex(cipher_text)).decode()
+            decrypted_data[i, j] = plain_text
+
+    return decrypted_data
 
 if __name__ == "__main__":
     adjaceny_matrix = np.array([[1, 1, 1, 0],
@@ -37,14 +61,26 @@ if __name__ == "__main__":
 
     graph = DAG(adjaceny_matrix, node_names, node_user_map)
 
-    df = pf.read_csv("breast-cancer.data")
-    print("Objects:" + str(df.columns.values))
+    df = pd.read_csv("breast-cancer.data")
+    for i in range(df.shape[0]):
+        for j in df.columns:
+            if type(df.ix[i, j]) != str:
+                df.ix[i, j] = str(df.ix[i, j])
+
+    columns = df.columns.values.tolist()
+    data = df.values
+
+    print("Objects:" + str(columns))
     node_object_map = {}
     node_object_map["CEO"] = ["Object 1", "Object 2", "Object 3"]
     node_object_map["Manager"] = ["Object 4", "Object 5"]
     node_object_map["Team Lead"] = ["Object 6", "Object 7"]
     node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
-    encrypted_dataset = encrypt_data(graph, df, node_object_map)
+    encrypted_dataset = encrypt_data_v1(graph, data, columns, node_object_map)
+
+    k_i = graph.node_list['Manager'].get_k_i()
+    decrypted_dataset = decrypt_data_v1(data, columns, 'Manager', node_object_map, k_i)
+    print(decrypted_dataset)
 
 
 
