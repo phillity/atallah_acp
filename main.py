@@ -7,6 +7,7 @@ from acp import User, ACP
 from dag import Node, Edge, DAG
 from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
+import random
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -96,20 +97,45 @@ def decrypt_data_v2(graph, data, columns, source_node, num_of_objects):
 
     return decrypted_data
 
-if __name__ == "__main__":
-    adjaceny_matrix = np.array([[1, 1, 1, 0],
-                                [0, 1, 0, 1],
-                                [0, 0, 1, 1],
-                                [0, 0, 0, 1]])
 
-    node_names = ["CEO", "Manager", "Team Lead", "Worker"]
+def create_random_dag(num_of_nodes, num_of_users_per_node):
+    adjaceny_matrix = []
+    for i in range(num_of_nodes):
+        adjaceny_matrix.append([])
+        for j in range(num_of_nodes):
+            if i > j:
+                edge = random.choice([0, 1])
+                adjaceny_matrix[i].append(edge)
+            else:
+                adjaceny_matrix[i].append(0)
+        # print(adjaceny_matrix[i])
+    
+    node_names = [f"test{i}" for i in range(0, num_of_nodes)]
+    
     node_user_map = {}
     for node_name in node_names:
         users = [User(md5(os.urandom(4)).hexdigest(),
-                 md5(os.urandom(16)).hexdigest()) for i in range(10)]
+                 md5(os.urandom(16)).hexdigest()) for i in range(num_of_users_per_node)]
         node_user_map[node_name] = users
 
     graph = DAG(adjaceny_matrix, node_names, node_user_map)
+    return graph, node_names
+    
+
+if __name__ == "__main__":
+    # adjaceny_matrix = np.array([[1, 1, 1, 0],
+    #                             [0, 1, 0, 1],
+    #                             [0, 0, 1, 1],
+    #                             [0, 0, 0, 1]])
+
+    # node_names = ["CEO", "Manager", "Team Lead", "Worker"]
+    # node_user_map = {}
+    # for node_name in node_names:
+    #     users = [User(md5(os.urandom(4)).hexdigest(),
+    #              md5(os.urandom(16)).hexdigest()) for i in range(10)]
+    #     node_user_map[node_name] = users
+
+    # graph = DAG(adjaceny_matrix, node_names, node_user_map)
 
     df = pd.read_csv("breast-cancer.data")
     for i in range(df.shape[0]):
@@ -120,16 +146,26 @@ if __name__ == "__main__":
     columns = df.columns.values.tolist()
     data = df.values
 
-    print("Objects:" + str(columns))
-    node_object_map = {}
-    node_object_map["CEO"] = ["Object 1", "Object 2", "Object 3"]
-    node_object_map["Manager"] = ["Object 4", "Object 5"]
-    node_object_map["Team Lead"] = ["Object 6", "Object 7"]
-    node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
-    # encrypted_dataset = encrypt_data_v1(graph, data, columns, node_object_map)
-    # decrypted_dataset = decrypt_data_v1(graph, data, columns, "CEO", "Manager", node_object_map)
-    encrypted_dataset_v2 = encrypt_data_v2(graph, data, columns, node_object_map)
-    decrypted_dataset_v2 = decrypt_data_v2(graph, data, columns, "CEO", len(node_object_map))
+    # print("Objects:" + str(columns))
+    # node_object_map = {}
+    # node_object_map["CEO"] = ["Object 1", "Object 2", "Object 3"]
+    # node_object_map["Manager"] = ["Object 4", "Object 5"]
+    # node_object_map["Team Lead"] = ["Object 6", "Object 7"]
+    # node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
+    # # encrypted_dataset = encrypt_data_v1(graph, data, columns, node_object_map)
+    # # decrypted_dataset = decrypt_data_v1(graph, data, columns, "CEO", "Manager", node_object_map)
+    # encrypted_dataset_v2 = encrypt_data_v2(graph, data, columns, node_object_map)
+    # decrypted_dataset_v2 = decrypt_data_v2(graph, data, columns, "CEO", len(node_object_map))
+    graph_1, node_names_1 = create_random_dag(4, 10)
+    node_object_map_1 = {}
+    node_object_map_1["test0"] = ["Object 1", "Object 2", "Object 3"]
+    node_object_map_1["test1"] = ["Object 4", "Object 5"]
+    node_object_map_1["test2"] = ["Object 6", "Object 7"]
+    node_object_map_1["test3"] = ["Object 8", "Object 9", "Object 10"]
+    encrypted_dataset_1 = encrypt_data_v1(graph_1, data, columns, node_object_map_1)
+    # DAG doesn't have clear hierarchy? How to know source and target node?
+    decrypted_dataset_1 = decrypt_data_v1(graph_1, data, columns, "test3", "test0", node_object_map_1)
+
 
 
 
