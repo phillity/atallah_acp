@@ -1,4 +1,5 @@
 import os
+import hashlib
 from hashlib import md5
 from acp import User, ACP
 from atallah import hash_fun, encrypt, decrypt
@@ -131,7 +132,7 @@ class DAG:
         Returns:
             N/A
         """
-        if name not in node_list.keys():
+        if name not in self.node_list.keys():
             self.node_list[name] = Node(name, users)
 
     def add_edge(self, paren_node, child_node):
@@ -165,7 +166,7 @@ class DAG:
         else:
             self.node_list[paren_node].edges.pop(child_node)
             return False
-
+    
     def have_path(self, src_node, des_node):
         """
         Checks to see if there is a path between two nodes.
@@ -194,7 +195,6 @@ class DAG:
                 if adj_node not in visited:
                     queue.append(adj_node)
                     visited.add(adj_node)
-        return False
 
     def descendant(self, v_i):
         """
@@ -228,7 +228,7 @@ class DAG:
 
         pred = []
         for node in self.node_list.keys():
-            if (node not in pred) and (node in self.node_list[v_i].edges):
+            if (node not in pred) and (v_i in self.node_list[node].edges):
                 pred.append(node)
         return pred
 
@@ -381,6 +381,7 @@ class DAG:
                 self.node_list[children].get_t_i(),
                 self.node_list[children].get_k_i())
 
+
     def remove_node_user(self, node, username):
         idx = -1
         for i, user in enumerate(self.node_list[node].users):
@@ -390,9 +391,74 @@ class DAG:
             self.node_list[node].users.pop(idx)
         self.update_node_secret(node)
 
+
     def add_node_user(self, node, user):
         self.node_list[node].users.append(user)
         self.update_node_secret(node)
+
+
+    def get_path(self, src_node, des_node, cur_path):
+        cur_path.append(src_node)
+        if src_node == des_node:
+            return cur_path
+
+        for children in self.node_list[src_node].edges.keys():
+            path = self.get_path(children, des_node, cur_path)
+            if len(path) > 0:
+                return path
+        return []
+
+    #derive kays alone the path from get_path()
+    def derive_key(self, path):
+        src_node = path[0]
+        t_j = self.node_list[src_node].get_t_i()
+        k_j = "something"
+        for i in range(1, len(path)):
+            child = path[i]
+            t_j, k_j = decrypt(hash_fun(t_j, self.node_list[child].l_i), self.node_list[src_node].edges[child].y_ij)
+            src_node = child
+        return k_j
+
+    ## derive keys when checking the path
+    # def derive_key(self, src_node, des_node, t_i, k_i="something"):
+    #     if src_node == des_node:
+    #         return k_i
+    #     for children in self.node_list[src_node].edges.keys():
+    #         t_j, k_j = decrypt(hash_fun(t_i, self.node_list[children].l_i), self.node_list[src_node].edges[children].y_ij)
+    #         k_j = self.derive_key(children, des_node, t_i)
+    #         if k_j not "something":
+    #             return k_j
+    #     return "something"            
+    
+    def derive_desc_key(self, src_node, t_i):
+        key_list = []
+        for children in self.node_list[src_node].edges.keys():
+            t_j, k_j = decrypt(hash_fun(t_i, self.node_list[children].l_i), self.node_list[src_node].edges[children].y_ij)
+            key_list.append(k_j)
+            key_list = key_list + self.derive_desc_key(children, t_j)
+        return key_list
+
+
+    def get_pub(self):
+        nodes = []
+        edges = []
+        for node, node_obj in self.node_list.items():
+            nodes.append([node, node_obj.l_i])
+            for edge, edge_obj in self.node_list[node].edges.items():
+                edges.append([node, edge, edge_obj.y_ij])
+        return [nodes, edges]
+        
+        # pub = dict()
+        # for node, node_obj in self.node_list.items():
+        #     cur_node = dict()
+        #     pub[node] = cur_node
+        #     cur_node["label"] = node_obj.l_i
+        #     cur_edges = dict()
+        #     cur_node["edges"] = cur_edges
+        #     for edge, edge_obj in self.node_list[node].edge.items():
+        #         cur_edges[edge] = edge_obj.y_ij
+        # return pub
+
 
     '''
     def rev_user(self, access_list):
