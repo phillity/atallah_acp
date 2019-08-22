@@ -167,9 +167,21 @@ if __name__ == "__main__":
 
     # Get random target column to decrypt
     target_col = np.random.choice(columns)
-
     # Get random source node
     source_node = np.random.choice(node_names)
+    # Ensure random source node can actually decrypt the random target column
+    compatible = False
+    while not compatible:
+        target_node = ""
+        for node_name, cols in node_object_map.items():
+            if target_col in cols:
+                target_node = node_name
+                break
+        path = graph.get_path(source_node, target_node, [])
+        if len(path) > 0:
+            compatible = True
+        else:
+            target_col = np.random.choice(columns)
 
     # Method 1
     encrypted_data = encrypt_data_v1(
@@ -177,7 +189,11 @@ if __name__ == "__main__":
     )
     # Time this function
     decrypted_data = decrypt_data_v1(
-        graph, encrypted_data, columns, source_node, target_col, node_object_map
+        graph,
+        encrypted_data,
+        columns, source_node,
+        target_col,
+        node_object_map
     )
 
     # Method 2
