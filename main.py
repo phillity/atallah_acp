@@ -145,26 +145,6 @@ if __name__ == "__main__":
                  md5(os.urandom(16)).hexdigest()) for i in range(user_num)]
         node_user_map[node_name] = users
 
-    # Create DAG
-    graph = DAG(adjaceny_matrix, node_names, node_user_map)
-    return graph, node_names
-    
-
-if __name__ == "__main__":
-    # adjaceny_matrix = np.array([[1, 1, 1, 0],
-    #                             [0, 1, 0, 1],
-    #                             [0, 0, 1, 1],
-    #                             [0, 0, 0, 1]])
-
-    # node_names = ["CEO", "Manager", "Team Lead", "Worker"]
-    # node_user_map = {}
-    # for node_name in node_names:
-    #     users = [User(md5(os.urandom(4)).hexdigest(),
-    #              md5(os.urandom(16)).hexdigest()) for i in range(10)]
-    #     node_user_map[node_name] = users
-
-    # graph = DAG(adjaceny_matrix, node_names, node_user_map)
-
     # Create dataset with at least one column for each node
     df = pd.read_csv("breast-cancer.data")
     for i in range(df.shape[0]):
