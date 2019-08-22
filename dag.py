@@ -400,22 +400,27 @@ class DAG:
         self.update_node_secret(node)
 
 
-    def get_path(self, src_node, des_node, cur_path):
-        cur_path.append(src_node)
-        if src_node == des_node:
+    def get_path(self, src_node, des_node):
+        cur_path = [src_node]
+        if self.get_path_helper(src_node, des_node, cur_path):
             return cur_path
-
-        for children in self.node_list[src_node].edges.keys():
-            path = self.get_path(children, des_node, cur_path)
-            if len(path) > 0:
-                return path
         return []
+
+    def get_path_helper(self, src_node, des_node, cur_path):
+        if src_node == des_node:
+            return True
+        for children in self.node_list[src_node].edges.keys():
+            cur_path.append(children)
+            if self.get_path_helper(children, des_node, cur_path):
+                return True
+            cur_path.pop()
+        return False
 
     #derive kays alone the path from get_path()
     def derive_key(self, path):
         src_node = path[0]
         t_j = self.node_list[src_node].get_t_i()
-        k_j = "something"
+        k_j = self.node_list[src_node].get_k_i()
         for i in range(1, len(path)):
             child = path[i]
             t_j, k_j = decrypt(hash_fun(t_j, self.node_list[child].l_i), self.node_list[src_node].edges[child].y_ij)

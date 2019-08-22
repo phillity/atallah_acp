@@ -46,7 +46,7 @@ def decrypt_data_v1(
             break
 
     # Get path from source_node to target_node
-    path = graph.get_path(source_node, target_node, [])
+    path = graph.get_path(source_node, target_node)
     if len(path) == 0:
         return None
     private_key = graph.derive_key(path)
@@ -174,9 +174,8 @@ def create_random_dag(node_names, node_user_map):
                 parent_node_name = f"Node {parent_node_num}"
                 graph.add_edge(parent_node_name, curr_node_name)
     
-    for node in graph.node_list:
-        print(f"node k: {graph.node_list[node].get_k_i()}")
-        print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
+    # for node in graph.node_list:
+        # print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
     return graph
 
 
@@ -235,7 +234,7 @@ if __name__ == "__main__":
             if target_col in cols:
                 target_node = node_name
                 break
-        path = graph.get_path(source_node, target_node, [])
+        path = graph.get_path(source_node, target_node)
         if len(path) > 0:
             compatible = True
         else:
