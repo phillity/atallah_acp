@@ -429,13 +429,19 @@ class DAG:
     #         if k_j not "something":
     #             return k_j
     #     return "something"            
-    
     def derive_desc_key(self, src_node, t_i):
+        key_list = []
+        key_list.append(self.node_list[src_node].get_k_i())
+        key_list += self.derive_desc_key_helper(src_node, t_i)
+        return list(set(key_list))
+
+
+    def derive_desc_key_helper(self, src_node, t_i):
         key_list = []
         for children in self.node_list[src_node].edges.keys():
             t_j, k_j = decrypt(hash_fun(t_i, self.node_list[children].l_i), self.node_list[src_node].edges[children].y_ij)
             key_list.append(k_j)
-            key_list = key_list + self.derive_desc_key(children, t_j)
+            key_list += self.derive_desc_key(children, t_j)
         return key_list
 
 

@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import codecs
+from copy import deepcopy
 from hashlib import md5
 from acp import User, ACP
 from dag import Node, Edge, DAG
@@ -61,38 +62,37 @@ def encrypt_data_v2(graph, data, columns, node_object_map):
                 aes = AES.new(bytes.fromhex(k_i),
                               AES.MODE_EAX,
                               nonce=bytes([42]))
-                concatted_data = k_i + data[i, idx]
-                plain_text = codecs.encode(concatted_data.encode(),
+                plain_text = codecs.encode(data[i, idx].encode(),
                                            "hex").decode()
                 cipher_text, _ = (
-                    aes.encrypt_and_digest(bytes.fromhex(plain_text))
+                    aes.encrypt_and_digest(bytes.fromhex(k_i + plain_text))
                 )
                 data[i, idx] = cipher_text.hex()
 
     return data
 
 
-def decrypt_data_v2(graph, data, columns, source_node, num_of_objects):
+def decrypt_data_v2(graph, data, columns, source_node):
     t_i = graph.node_list[source_node].get_t_i()
     private_keys = graph.derive_desc_key(source_node, t_i)
 
-    decrypted_data = np.zeros((data.shape[0], num_of_objects)).astype(str)
-
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
+    decrypted_data = np.zeros((data.shape[0], 1)).astype(str)
+    objects = set()
+    for j, col in enumerate(columns):
+        for i in range(data.shape[0]):
             for private_key in private_keys:
                 aes = AES.new(bytes.fromhex(private_key),
                               AES.MODE_EAX,
                               nonce=bytes([42]))
                 cipher_text = data[i, j]
-                plain_text = aes.decrypt(bytes.fromhex(cipher_text))
-                print(f"plain_text: {plain_text}")
-                plain_text = plain_text.decode()
+                plain_text = aes.decrypt(bytes.fromhex(cipher_text)).hex()
                 plain_text_key = plain_text[:len(private_key)]
                 plain_text_data = plain_text[len(private_key):]
                 if private_key == plain_text_key:
-                    decrypted_data[i, j] = plain_text_data
-
+                    objects.add(col)
+                    if len(objects) > decrypted_data.shape[1]:
+                        decrypted_data = np.hstack([decrypted_data, np.zeros((data.shape[0], 1)).astype(str)])
+                    decrypted_data[i, len(objects) - 1] = bytearray.fromhex(plain_text_data).decode()
 
     return decrypted_data
 
@@ -126,11 +126,12 @@ if __name__ == "__main__":
     node_object_map["Manager"] = ["Object 4", "Object 5"]
     node_object_map["Team Lead"] = ["Object 6", "Object 7"]
     node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
-    # encrypted_dataset = encrypt_data_v1(graph, data, columns, node_object_map)
-    # decrypted_dataset = decrypt_data_v1(graph, data, columns, "CEO", "Manager", node_object_map)
-    encrypted_dataset_v2 = encrypt_data_v2(graph, data, columns, node_object_map)
-    decrypted_dataset_v2 = decrypt_data_v2(graph, data, columns, "CEO", len(node_object_map))
-
+    # encrypted_data = encrypt_data_v1(graph, deepcopy(data), columns, node_object_map)
+    # decrypted_data = decrypt_data_v1(graph, data, columns, "CEO", "Manager", node_object_map)
+    # assert(np.array_equal(data, decrypted_data_v2))
+    encrypted_data_v2 = encrypt_data_v2(graph, deepcopy(data), columns, node_object_map)
+    decrypted_data_v2 = decrypt_data_v2(graph, encrypted_data_v2, columns, "CEO")
+    assert(np.array_equal(data, decrypted_data_v2))
 
 
     '''
