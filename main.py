@@ -9,6 +9,7 @@ from dag import Node, Edge, DAG
 from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
 import random
+from decorators import timer
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -32,6 +33,7 @@ def encrypt_data_v1(graph, data, columns, node_object_map):
     return data
 
 
+@timer
 def decrypt_data_v1(
     graph, data, columns, source_node, target_col, node_object_map
 ):
@@ -87,6 +89,7 @@ def encrypt_data_v2(graph, data, columns, node_object_map):
     return data
 
 
+@timer
 def decrypt_data_v2(graph, data, columns, source_node, target_col):
     # Don't have node-to-object map, so get all descendant keys
     t_i = graph.node_list[source_node].get_t_i()
@@ -171,8 +174,9 @@ def create_random_dag(node_names, node_user_map):
                 parent_node_name = f"Node {parent_node_num}"
                 graph.add_edge(parent_node_name, curr_node_name)
     
-    # for node in graph.node_list:
-        # print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
+    for node in graph.node_list:
+        print(f"node k: {graph.node_list[node].get_k_i()}")
+        print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
     return graph
 
 
@@ -183,10 +187,10 @@ if __name__ == "__main__":
     user_num = 100
 
     # Generate DAG adjaceny matrix for node_num nodes
-    adjaceny_matrix = np.array([[1, 1, 1, 0],
-                                [0, 1, 0, 1],
-                                [0, 0, 1, 1],
-                                [0, 0, 0, 1]])
+    # adjaceny_matrix = np.array([[1, 1, 1, 0],
+    #                             [0, 1, 0, 1],
+    #                             [0, 0, 1, 1],
+    #                             [0, 0, 0, 1]])
 
     # Create users for each node
     node_names = ["Node " + str(i) for i in range(node_num)]
@@ -195,8 +199,6 @@ if __name__ == "__main__":
         users = [User(md5(os.urandom(4)).hexdigest(),
                  md5(os.urandom(16)).hexdigest()) for i in range(user_num)]
         node_user_map[node_name] = users
-    
-    random_graph_1 = create_random_dag(node_names, node_user_map)
 
     # Create dataset with at least one column for each node
     df = pd.read_csv("breast-cancer.data")
@@ -218,6 +220,9 @@ if __name__ == "__main__":
     for i in range(node_num):
         node_object_map[node_names[i]] = node_obj_li[i]
 
+    # create the graph randomly
+    graph = create_random_dag(node_names, node_user_map)
+
     # Get random target column to decrypt
     target_col = np.random.choice(columns)
     # Get random source node
@@ -235,6 +240,8 @@ if __name__ == "__main__":
             compatible = True
         else:
             target_col = np.random.choice(columns)
+
+
 
     # Method 1
     encrypted_data = encrypt_data_v1(
