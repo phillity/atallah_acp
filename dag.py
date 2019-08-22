@@ -94,7 +94,7 @@ class Edge:
         self.y_ij = encrypt(self.__r_ij, t_j, k_j)
 
     def update_r_ij(self, t_i, l_j):
-        self.r_ij = hash_fun(t_i, l_j)
+        self.__r_ij = hash_fun(t_i, l_j)
 
     def update_y_ij(self, t_j, k_j):
         self.y_ij = encrypt(self.__r_ij, t_j, k_j)
@@ -317,6 +317,7 @@ class DAG:
         # generate a new ID for parent and compute new k
         # update publicID for all the decs of role
         # for all the roles involved, find the pred sets and update edge keys
+
         for node in self.descendant(child_node):
             self.update_label(node)
 
@@ -429,13 +430,19 @@ class DAG:
     #         if k_j not "something":
     #             return k_j
     #     return "something"            
-    
     def derive_desc_key(self, src_node, t_i):
+        key_list = []
+        key_list.append(self.node_list[src_node].get_k_i())
+        key_list += self.derive_desc_key_helper(src_node, t_i)
+        return list(set(key_list))
+
+
+    def derive_desc_key_helper(self, src_node, t_i):
         key_list = []
         for children in self.node_list[src_node].edges.keys():
             t_j, k_j = decrypt(hash_fun(t_i, self.node_list[children].l_i), self.node_list[src_node].edges[children].y_ij)
             key_list.append(k_j)
-            key_list = key_list + self.derive_desc_key(children, t_j)
+            key_list += self.derive_desc_key(children, t_j)
         return key_list
 
 
