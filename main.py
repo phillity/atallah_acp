@@ -125,6 +125,57 @@ def decrypt_data_v2(graph, data, columns, source_node, target_col):
 
     return decrypted_data
 
+
+def create_random_dag(node_names, node_user_map):
+    """
+    Randomly generates a DAG graph. Start of by creating a list that represents the hierarchy.
+    Each element in the list is another list showing the nodes in that level.
+    The number of nodes in each level is random. Then use this hierarchy to create nodes
+    and edges between nodes. Edges are created by randomly selecting a node in the previous level
+    as a parent.
+
+    Args:
+        node_names (list): list of all the nodes to be used
+        node_user_map (dict): use node name as a key to get all the users for node
+    
+    Returns:
+        graph (DAG): returns a randomly generated DAG object
+    """
+    # the number of nodes to create will be the same as the length of the node_names list
+    node_num = len(node_names)
+    hierarchy = []
+    curr_num_of_nodes = 0
+    hierarchy.append([curr_num_of_nodes])
+    curr_num_of_nodes += 1
+    # create a hierarchy for the nodes
+    while curr_num_of_nodes < node_num:
+        nodes_to_create = random.choice(list(range(curr_num_of_nodes, node_num)))
+        level = [i for i in range(curr_num_of_nodes, nodes_to_create+1)]
+        curr_num_of_nodes += len(level)
+        hierarchy.append(level)
+
+    # create empty graph object without passing in input matrix
+    graph = DAG(node_names, node_user_map)
+
+    # use the hierarchy to create the nodes and edges
+    for level in range(len(hierarchy)):
+        if level == 0:
+            graph.add_node(f"Node 0", node_user_map["Node 0"])
+        else:
+            for num in hierarchy[level]:
+                curr_node_name = f"Node {num}"
+                graph.add_node(curr_node_name, node_user_map[curr_node_name])
+                parent_level = level-1
+                # randomly choose a node a level above in the hierarchy as the parent
+                parent_node_num = random.choice(hierarchy[parent_level])
+                parent_node_name = f"Node {parent_node_num}"
+                graph.add_edge(parent_node_name, curr_node_name)
+    
+    # for node in graph.node_list:
+        # print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
+    return graph
+
+
 if __name__ == "__main__":
     # Define number of nodes (and also number of objects)
     node_num = 4
@@ -144,6 +195,8 @@ if __name__ == "__main__":
         users = [User(md5(os.urandom(4)).hexdigest(),
                  md5(os.urandom(16)).hexdigest()) for i in range(user_num)]
         node_user_map[node_name] = users
+    
+    random_graph_1 = create_random_dag(node_names, node_user_map)
 
     # Create dataset with at least one column for each node
     df = pd.read_csv("breast-cancer.data")

@@ -101,7 +101,7 @@ class Edge:
 
 
 class DAG:
-    def __init__(self, input_matrix, node_names, node_user_map):
+    def __init__(self, node_names, node_user_map, input_matrix=None):
         """
         Constructor for DAG. Takes in adjacency list matrix input from main.py
 
@@ -114,13 +114,15 @@ class DAG:
         """
         self.node_list = {}
 
-        for node_name in node_names:
-            self.add_node(node_name, node_user_map[node_name])
+        # only need to build graph if an input matrix is provided
+        if input_matrix is not None:
+            for node_name in node_names:
+                self.add_node(node_name, node_user_map[node_name])
 
-        for i in range(len(input_matrix)):
-            for j in range(len(input_matrix[i])):
-                if(input_matrix[i][j] == 1):
-                    self.add_edge(node_names[i], node_names[j])
+            for i in range(len(input_matrix)):
+                for j in range(len(input_matrix[i])):
+                    if(input_matrix[i][j] == 1):
+                        self.add_edge(node_names[i], node_names[j])
 
     def add_node(self, name, users):
         """
