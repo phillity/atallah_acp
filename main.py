@@ -10,6 +10,7 @@ from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
 import random
 from decorators import timer
+from memory_profiler import profile
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -128,7 +129,7 @@ def decrypt_data_v2(graph, data, columns, source_node, target_col):
 
     return decrypted_data
 
-
+@profile
 def create_random_dag(node_names, node_user_map):
     """
     Randomly generates a DAG graph. Start of by creating a list that represents the hierarchy.
@@ -178,12 +179,18 @@ def create_random_dag(node_names, node_user_map):
         # print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
     return graph
 
+def setup_and_run_experiment_once(node_num, user_num):
+    """
+    Do all the setup to for single instance of the experiment.
+    Will print out times for each decryption and memory profile for graph creation.
 
-if __name__ == "__main__":
-    # Define number of nodes (and also number of objects)
-    node_num = 4
-    # Define number of user per node
-    user_num = 100
+    Args:
+        node_num (int): Define number of nodes (and also number of objects)
+        user_num (int): Define number of user per node
+    
+    Returns:
+        N/A
+    """
 
     # Generate DAG adjaceny matrix for node_num nodes
     # adjaceny_matrix = np.array([[1, 1, 1, 0],
@@ -208,7 +215,8 @@ if __name__ == "__main__":
     data = df.values
     copies = np.ceil(node_num / 10)
     if copies > 1:
-        for i in range(copies):
+        # need to make sure copies is an int for range
+        for i in range(int(copies)):
             data = np.hstack([data, data])
     columns = ["Object " + str(i) for i in range(data.shape[1])]
     node_obj_li = np.array_split(np.array(columns), node_num)
@@ -241,7 +249,6 @@ if __name__ == "__main__":
             target_col = np.random.choice(columns)
 
 
-
     # Method 1
     encrypted_data = encrypt_data_v1(
         graph, deepcopy(data), columns, node_object_map
@@ -263,3 +270,27 @@ if __name__ == "__main__":
     decrypted_data_v2 = decrypt_data_v2(
         graph, encrypted_data_v2, columns, source_node, target_col
     )
+
+
+
+if __name__ == "__main__":
+    """
+    Run this program in terminal and use tee to output results to file for parsing.
+    example: "python main.py | tee raw_unparsed_experiment_data.txt"
+    Then run: "python parse_experiment_data.py"
+    To get the two csv files for the experiments
+    """
+    highest_node_num = 50
+    # possible inputs for node_num
+    # Right now just increment by 5 nodes for each input I guess?
+    inputs = [x for x in range(5, highest_node_num+1, 5)]
+    # I lowered this from 100 because my computer was being slow. Not sure if we need
+    # to up this or if it needs to change like the nodes each time. 
+    user_num = 10
+    for input_value in inputs:
+        print(f"Running experiment with {input_value} nodes, {user_num} users per node")
+        # need to run each input value 3 times, then take average
+        for i in range(3):
+            print(f"Run number {i+1}")
+            setup_and_run_experiment_once(input_value, user_num)
+        print(f"Ending experiment with {input_value} nodes")

@@ -5,7 +5,8 @@ def timer(function):
     """
     Decorator used to print the runtime of a function in seconds.
     To use simply place "@timer" above a function declaration.
-    For nanoseconds instead use perf_counter_ns for start and end times.
+    For nanoseconds use perf_counter_ns for start and end times.
+    For seconds use perf_counter for start and end times.
 
     Args:
         function: the name of the function to time
