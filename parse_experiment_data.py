@@ -14,22 +14,18 @@ with open(filename) as f:
     mem_consumptions = []
     node_num = 0
     while line:
+        split_line = line.strip().split(" ")
+        first_word = split_line[0]
         # check if start of new input
-        if line.startswith("Running"):
-            split_line = line.split(" ")
+        if first_word == "Running":
             node_num = int(split_line[3])
-        if line.startswith("decrypt_data_v1"):
-            split_line = line.split(" ")
+        elif first_word == "decrypt_data_v1":
             run_times_decrypt_v1.append(float(split_line[3]))
-        if line.startswith("decrypt_data_v2"):
-            split_line = line.split(" ")
+        elif first_word == "decrypt_data_v2":
             run_times_decrypt_v2.append(float(split_line[3]))
-        if "@profile" in line:
-            split_line = line.strip().split(" ")
-            # get rid of spaces in between
-            filtered_line = [x for x in split_line if x]
-            mem_consumptions.append(float(filtered_line[1]))
-        if line.startswith("Ending experiment"):
+        elif first_word == "Size":
+            mem_consumptions.append(int(split_line[5]))
+        elif first_word == "Ending":
             # calc averages for runtimes
             average_decrypt_v1 = sum(run_times_decrypt_v1) / len(run_times_decrypt_v1)
             average_decrypt_v2 = sum(run_times_decrypt_v2) / len(run_times_decrypt_v2)

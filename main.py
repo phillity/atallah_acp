@@ -10,7 +10,7 @@ from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
 import random
 from decorators import timer
-from memory_profiler import profile
+from pympler import asizeof
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -129,7 +129,6 @@ def decrypt_data_v2(graph, data, columns, source_node, target_col):
 
     return decrypted_data
 
-@profile
 def create_random_dag(node_names, node_user_map):
     """
     Randomly generates a DAG graph. Start of by creating a list that represents the hierarchy.
@@ -229,6 +228,8 @@ def setup_and_run_experiment_once(node_num, user_num):
 
     # create the graph randomly
     graph = create_random_dag(node_names, node_user_map)
+    # Measure the size of this graph
+    print(f"Size of graph in memory: {asizeof.asizeof(graph)} bytes")
 
     # Get random target column to decrypt
     target_col = np.random.choice(columns)
@@ -280,13 +281,11 @@ if __name__ == "__main__":
     Then run: "python parse_experiment_data.py"
     To get the two csv files for the experiments
     """
-    highest_node_num = 50
+    highest_node_num = 1000
     # possible inputs for node_num
-    # Right now just increment by 5 nodes for each input I guess?
-    inputs = [x for x in range(5, highest_node_num+1, 5)]
-    # I lowered this from 100 because my computer was being slow. Not sure if we need
-    # to up this or if it needs to change like the nodes each time. 
-    user_num = 10
+    # start at 10 and step up by 10 each time till reaching highest node num
+    inputs = [x for x in range(10, highest_node_num+1, 10)]
+    user_num = 100
     for input_value in inputs:
         print(f"Running experiment with {input_value} nodes, {user_num} users per node")
         # need to run each input value 3 times, then take average
