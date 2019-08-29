@@ -8,6 +8,9 @@ csv_data_1 = [["Function Name", "Number of nodes", "Average of 3 runs"]]
 # csv data for memory consumption experiment
 csv_data_2 = [["Number of nodes", "Average of 3 runs"]]
 
+
+# In addition to the csv files we also want to create some graphs
+# the x axis is the same for both graphs
 x = []
 y_dec_1 = []
 y_dec_2 = []
@@ -45,15 +48,15 @@ with open(filename) as f:
             average_mem_consumption = sum(mem_consumptions) / len(mem_consumptions)
             # data for second experiment
             csv_data_2.append([node_num, average_mem_consumption])
-            # mem graph
+            # nodes for x axis that is used in both graphs
             x.append(node_num)
+            # mem graph
             y_mem.append(average_mem_consumption)
             # reset runtimes
             run_times_decrypt_v1 = []
             run_times_decrypt_v2 = []
             # reset mem_consumptions
             mem_consumptions = []
-
 
         # read the next line if there is one
         line = f.readline()
