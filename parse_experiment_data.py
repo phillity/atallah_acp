@@ -1,4 +1,5 @@
 import csv
+import matplotlib.pyplot as plt
 
 filename = "raw_unparsed_experiment_data.txt"
 
@@ -6,6 +7,11 @@ filename = "raw_unparsed_experiment_data.txt"
 csv_data_1 = [["Function Name", "Number of nodes", "Average of 3 runs"]]
 # csv data for memory consumption experiment
 csv_data_2 = [["Number of nodes", "Average of 3 runs"]]
+
+x = []
+y_dec_1 = []
+y_dec_2 = []
+y_mem = []
 
 with open(filename) as f:
     line = f.readline()
@@ -32,10 +38,16 @@ with open(filename) as f:
             # line for first func
             csv_data_1.append(["decrypt_data_v1", node_num, average_decrypt_v1])
             csv_data_1.append(["decrypt_data_v2", node_num, average_decrypt_v2])
+            # decryption graph
+            y_dec_1.append(average_decrypt_v1)
+            y_dec_2.append(average_decrypt_v2)
             # calc averages for mem consumption
             average_mem_consumption = sum(mem_consumptions) / len(mem_consumptions)
             # data for second experiment
             csv_data_2.append([node_num, average_mem_consumption])
+            # mem graph
+            x.append(node_num)
+            y_mem.append(average_mem_consumption)
             # reset runtimes
             run_times_decrypt_v1 = []
             run_times_decrypt_v2 = []
@@ -53,3 +65,21 @@ with open("runtime_experiment_data.csv", "w", newline="") as csv_file_1:
 with open("memory_experiment_data.csv", "w", newline="") as csv_file_2:
     writer = csv.writer(csv_file_2)
     writer.writerows(csv_data_2)
+
+# create decryption graph
+plt.figure(1)
+line_dec_1 = plt.plot(x, y_dec_1, marker="o", label="Algorithm 2")
+line_dec_2 = plt.plot(x, y_dec_2, marker="o", label="Algorithm 3")
+plt.title("Runtimes For Data Decryption Algorithms")
+plt.ylabel("Seconds")
+plt.xlabel("Nodes")
+plt.legend()
+plt.savefig("runtime_experiment_graph.pdf", bbox_inches="tight")
+
+# create mem graph
+plt.figure(2)
+plt.plot(x, y_mem, marker="o")
+plt.title("Memory Consumption")
+plt.ylabel("Bytes")
+plt.xlabel("Nodes")
+plt.savefig("memory_experiment_graph.pdf", bbox_inches="tight")
