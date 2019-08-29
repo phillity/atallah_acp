@@ -1,0 +1,139 @@
+Running experiment with 10 nodes, 100 users per node
+Size of graph in memory: 368632 bytes
+decrypt_data_v1 ran in 0.3078902 seconds
+decrypt_data_v2 ran in 0.34692359999999933 seconds
+Run number 2
+Size of graph in memory: 368720 bytes
+decrypt_data_v1 ran in 0.2775458999999998 seconds
+decrypt_data_v2 ran in 0.3358344999999989 seconds
+Run number 3
+Size of graph in memory: 368720 bytes
+decrypt_data_v1 ran in 0.28714079999999953 seconds
+decrypt_data_v2 ran in 0.6220855000000007 seconds
+Ending experiment with 10 nodes
+Running experiment with 20 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 736776 bytes
+decrypt_data_v1 ran in 0.2583108999999979 seconds
+decrypt_data_v2 ran in 0.29018210000000266 seconds
+Run number 2
+Size of graph in memory: 737080 bytes
+decrypt_data_v1 ran in 0.2675663000000128 seconds
+decrypt_data_v2 ran in 0.3151500000000027 seconds
+Run number 3
+Size of graph in memory: 736776 bytes
+decrypt_data_v1 ran in 0.35781740000000184 seconds
+decrypt_data_v2 ran in 0.2866672000000108 seconds
+Ending experiment with 20 nodes
+Running experiment with 30 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 1105768 bytes
+decrypt_data_v1 ran in 0.2547743000000082 seconds
+decrypt_data_v2 ran in 0.2719775999999854 seconds
+Run number 2
+Size of graph in memory: 1105576 bytes
+decrypt_data_v1 ran in 0.26236990000001015 seconds
+decrypt_data_v2 ran in 0.28089210000001685 seconds
+Run number 3
+Size of graph in memory: 1105768 bytes
+decrypt_data_v1 ran in 0.25934529999997835 seconds
+decrypt_data_v2 ran in 0.2693535999999881 seconds
+Ending experiment with 30 nodes
+Running experiment with 40 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 1473864 bytes
+decrypt_data_v1 ran in 0.27742229999995516 seconds
+decrypt_data_v2 ran in 0.41693129999998746 seconds
+Run number 2
+Size of graph in memory: 1474216 bytes
+decrypt_data_v1 ran in 0.38521180000003596 seconds
+decrypt_data_v2 ran in 0.6104800000000523 seconds
+Run number 3
+Size of graph in memory: 1473064 bytes
+decrypt_data_v1 ran in 0.3957160999999587 seconds
+decrypt_data_v2 ran in 0.4064329999999927 seconds
+Ending experiment with 40 nodes
+Running experiment with 50 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 1842960 bytes
+decrypt_data_v1 ran in 0.3401919000000362 seconds
+decrypt_data_v2 ran in 0.2670234999998229 seconds
+Run number 2
+Size of graph in memory: 1842072 bytes
+decrypt_data_v1 ran in 0.32118500000001404 seconds
+decrypt_data_v2 ran in 0.5469877000000452 seconds
+Run number 3
+Size of graph in memory: 1843880 bytes
+decrypt_data_v1 ran in 0.340016500000047 seconds
+decrypt_data_v2 ran in 0.36615180000012515 seconds
+Ending experiment with 50 nodes
+Running experiment with 60 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 2212056 bytes
+decrypt_data_v1 ran in 0.26386890000003405 seconds
+decrypt_data_v2 ran in 0.3149652000001879 seconds
+Run number 2
+Size of graph in memory: 2212056 bytes
+decrypt_data_v1 ran in 0.42357429999992746 seconds
+decrypt_data_v2 ran in 0.3510722999999416 seconds
+Run number 3
+Size of graph in memory: 2211440 bytes
+decrypt_data_v1 ran in 0.34491479999996955 seconds
+decrypt_data_v2 ran in 0.3353978999998617 seconds
+Ending experiment with 60 nodes
+Running experiment with 70 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 2579088 bytes
+decrypt_data_v1 ran in 0.33027609999999186 seconds
+decrypt_data_v2 ran in 0.31511330000012094 seconds
+Run number 2
+Size of graph in memory: 2578608 bytes
+decrypt_data_v1 ran in 0.3040826000005836 seconds
+decrypt_data_v2 ran in 0.3828819000000294 seconds
+Run number 3
+Size of graph in memory: 2579352 bytes
+decrypt_data_v1 ran in 0.2703099000000293 seconds
+decrypt_data_v2 ran in 0.3375575999998546 seconds
+Ending experiment with 70 nodes
+Running experiment with 80 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 2945816 bytes
+decrypt_data_v1 ran in 0.3094737999999779 seconds
+decrypt_data_v2 ran in 0.7323739000003116 seconds
+Run number 2
+Size of graph in memory: 2945568 bytes
+decrypt_data_v1 ran in 0.7563350000000355 seconds
+decrypt_data_v2 ran in 0.9400986999989982 seconds
+Run number 3
+Size of graph in memory: 2946808 bytes
+decrypt_data_v1 ran in 0.2824686000003567 seconds
+decrypt_data_v2 ran in 0.3285482999999658 seconds
+Ending experiment with 80 nodes
+Running experiment with 90 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 3317336 bytes
+decrypt_data_v1 ran in 0.2943124000012176 seconds
+decrypt_data_v2 ran in 0.4105361999972956 seconds
+Run number 2
+Size of graph in memory: 3316368 bytes
+decrypt_data_v1 ran in 0.30784200000198325 seconds
+decrypt_data_v2 ran in 0.3094063999997161 seconds
+Run number 3
+Size of graph in memory: 3316328 bytes
+decrypt_data_v1 ran in 0.3549246000002313 seconds
+decrypt_data_v2 ran in 0.32728510000015376 seconds
+Ending experiment with 90 nodes
+Running experiment with 100 nodes, 100 users per node
+Run number 1
+Size of graph in memory: 3683448 bytes
+decrypt_data_v1 ran in 0.28673020000132965 seconds
+decrypt_data_v2 ran in 0.320057299999462 seconds
+Run number 2
+Size of graph in memory: 3684808 bytes
+decrypt_data_v1 ran in 0.36227040000085253 seconds
+decrypt_data_v2 ran in 0.3683466000002227 seconds
+Run number 3
+Size of graph in memory: 3684984 bytes
+decrypt_data_v1 ran in 0.2847293000013451 seconds
+decrypt_data_v2 ran in 0.4335706999991089 seconds
+Ending experiment with 100 nodes

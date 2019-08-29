@@ -101,7 +101,7 @@ class Edge:
 
 
 class DAG:
-    def __init__(self, input_matrix, node_names, node_user_map):
+    def __init__(self, node_names, node_user_map, input_matrix=None):
         """
         Constructor for DAG. Takes in adjacency list matrix input from main.py
 
@@ -114,13 +114,15 @@ class DAG:
         """
         self.node_list = {}
 
-        for node_name in node_names:
-            self.add_node(node_name, node_user_map[node_name])
+        # only need to build graph if an input matrix is provided
+        if input_matrix is not None:
+            for node_name in node_names:
+                self.add_node(node_name, node_user_map[node_name])
 
-        for i in range(len(input_matrix)):
-            for j in range(len(input_matrix[i])):
-                if(input_matrix[i][j] == 1):
-                    self.add_edge(node_names[i], node_names[j])
+            for i in range(len(input_matrix)):
+                for j in range(len(input_matrix[i])):
+                    if(input_matrix[i][j] == 1):
+                        self.add_edge(node_names[i], node_names[j])
 
     def add_node(self, name, users):
         """
@@ -398,22 +400,27 @@ class DAG:
         self.update_node_secret(node)
 
 
-    def get_path(self, src_node, des_node, cur_path):
-        cur_path.append(src_node)
-        if src_node == des_node:
+    def get_path(self, src_node, des_node):
+        cur_path = [src_node]
+        if self.get_path_helper(src_node, des_node, cur_path):
             return cur_path
-
-        for children in self.node_list[src_node].edges.keys():
-            path = self.get_path(children, des_node, cur_path)
-            if len(path) > 0:
-                return path
         return []
+
+    def get_path_helper(self, src_node, des_node, cur_path):
+        if src_node == des_node:
+            return True
+        for children in self.node_list[src_node].edges.keys():
+            cur_path.append(children)
+            if self.get_path_helper(children, des_node, cur_path):
+                return True
+            cur_path.pop()
+        return False
 
     #derive kays alone the path from get_path()
     def derive_key(self, path):
         src_node = path[0]
         t_j = self.node_list[src_node].get_t_i()
-        k_j = "something"
+        k_j = self.node_list[src_node].get_k_i()
         for i in range(1, len(path)):
             child = path[i]
             t_j, k_j = decrypt(hash_fun(t_j, self.node_list[child].l_i), self.node_list[src_node].edges[child].y_ij)

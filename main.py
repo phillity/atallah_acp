@@ -8,6 +8,9 @@ from acp import User, ACP
 from dag import Node, Edge, DAG
 from atallah import hash_fun, encrypt, decrypt
 from Crypto.Cipher import AES
+import random
+from decorators import timer
+from pympler import asizeof
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -31,22 +34,37 @@ def encrypt_data_v1(graph, data, columns, node_object_map):
     return data
 
 
-def decrypt_data_v1(graph, data, columns, source_node, target_node, node_object_map):
-    path = graph.get_path(source_node, target_node, [])
+@timer
+def decrypt_data_v1(
+    graph, data, columns, source_node, target_col, node_object_map
+):
+    # Get node corresponding to column we want from mapping
+    assert(target_col in columns)
+    target_node = ""
+    for node_name, cols in node_object_map.items():
+        if target_col in cols:
+            target_node = node_name
+            break
+
+    # Get path from source_node to target_node
+    path = graph.get_path(source_node, target_node)
+    if len(path) == 0:
+        return None
     private_key = graph.derive_key(path)
 
-    objects = node_object_map[target_node]
-    decrypted_data = np.zeros((data.shape[0], len(objects))).astype(str)
+    # Get encrypted data we want and intialize decrypted data
+    col_idx = columns.index(target_col)
+    encrypted_data = data[:, col_idx]
+    decrypted_data = np.zeros(encrypted_data.shape).astype(str)
 
-    for j, obj in enumerate(objects):
-        idx = columns.index(obj)
-        for i in range(data[:, idx].shape[0]):
-            aes = AES.new(bytes.fromhex(private_key),
-                          AES.MODE_EAX,
-                          nonce=bytes([42]))
-            cipher_text = data[i, idx]
-            plain_text = aes.decrypt(bytes.fromhex(cipher_text)).decode()
-            decrypted_data[i, j] = plain_text
+    # Decrypt data
+    for i in range(encrypted_data.shape[0]):
+        aes = AES.new(bytes.fromhex(private_key),
+                      AES.MODE_EAX,
+                      nonce=bytes([42]))
+        cipher_text = encrypted_data[i]
+        plain_text = aes.decrypt(bytes.fromhex(cipher_text)).decode()
+        decrypted_data[i] = plain_text
 
     return decrypted_data
 
@@ -72,115 +90,206 @@ def encrypt_data_v2(graph, data, columns, node_object_map):
     return data
 
 
-def decrypt_data_v2(graph, data, columns, source_node):
+@timer
+def decrypt_data_v2(graph, data, columns, source_node, target_col):
+    # Don't have node-to-object map, so get all descendant keys
     t_i = graph.node_list[source_node].get_t_i()
     private_keys = graph.derive_desc_key(source_node, t_i)
 
-    decrypted_data = np.zeros((data.shape[0], 1)).astype(str)
-    objects = set()
-    for j, col in enumerate(columns):
-        for i in range(data.shape[0]):
-            for private_key in private_keys:
-                aes = AES.new(bytes.fromhex(private_key),
-                              AES.MODE_EAX,
-                              nonce=bytes([42]))
-                cipher_text = data[i, j]
-                plain_text = aes.decrypt(bytes.fromhex(cipher_text)).hex()
-                plain_text_key = plain_text[:len(private_key)]
-                plain_text_data = plain_text[len(private_key):]
-                if private_key == plain_text_key:
-                    objects.add(col)
-                    if len(objects) > decrypted_data.shape[1]:
-                        decrypted_data = np.hstack([decrypted_data, np.zeros((data.shape[0], 1)).astype(str)])
-                    decrypted_data[i, len(objects) - 1] = bytearray.fromhex(plain_text_data).decode()
+    # Get encrypted data we want and intialize decrypted data
+    col_idx = columns.index(target_col)
+    encrypted_data = data[:, col_idx]
+    decrypted_data = np.zeros(encrypted_data.shape).astype(str)
+
+    # Figure what key (if any) work
+    target_key = None
+    for private_key in private_keys:
+        aes = AES.new(bytes.fromhex(private_key),
+                      AES.MODE_EAX,
+                      nonce=bytes([42]))
+        cipher_text = encrypted_data[0]
+        plain_text = aes.decrypt(bytes.fromhex(cipher_text)).hex()
+        plain_text_key = plain_text[:len(private_key)]
+        if private_key == plain_text_key:
+            target_key = private_key
+            break
+
+    # Use working key to decrypt target_col data
+    if target_key:
+        for i in range(encrypted_data.shape[0]):
+            aes = AES.new(bytes.fromhex(target_key),
+                          AES.MODE_EAX,
+                          nonce=bytes([42]))
+            cipher_text = encrypted_data[i]
+            plain_text = aes.decrypt(bytes.fromhex(cipher_text)).hex()
+            plain_text_data = plain_text[len(private_key):]
+            decrypted_data[i] = bytearray.fromhex(plain_text_data).decode()
+    else:
+        return None
 
     return decrypted_data
 
-if __name__ == "__main__":
-    adjaceny_matrix = np.array([[1, 1, 1, 0],
-                                [0, 1, 0, 1],
-                                [0, 0, 1, 1],
-                                [0, 0, 0, 1]])
+def create_random_dag(node_names, node_user_map):
+    """
+    Randomly generates a DAG graph. Start of by creating a list that represents the hierarchy.
+    Each element in the list is another list showing the nodes in that level.
+    The number of nodes in each level is random. Then use this hierarchy to create nodes
+    and edges between nodes. Edges are created by randomly selecting a node in the previous level
+    as a parent.
 
-    node_names = ["CEO", "Manager", "Team Lead", "Worker"]
+    Args:
+        node_names (list): list of all the nodes to be used
+        node_user_map (dict): use node name as a key to get all the users for node
+    
+    Returns:
+        graph (DAG): returns a randomly generated DAG object
+    """
+    # the number of nodes to create will be the same as the length of the node_names list
+    node_num = len(node_names)
+    hierarchy = []
+    curr_num_of_nodes = 0
+    hierarchy.append([curr_num_of_nodes])
+    curr_num_of_nodes += 1
+    # create a hierarchy for the nodes
+    while curr_num_of_nodes < node_num:
+        nodes_to_create = random.choice(list(range(curr_num_of_nodes, node_num)))
+        level = [i for i in range(curr_num_of_nodes, nodes_to_create+1)]
+        curr_num_of_nodes += len(level)
+        hierarchy.append(level)
+
+    # create empty graph object without passing in input matrix
+    graph = DAG(node_names, node_user_map)
+
+    # use the hierarchy to create the nodes and edges
+    for level in range(len(hierarchy)):
+        if level == 0:
+            graph.add_node(f"Node 0", node_user_map["Node 0"])
+        else:
+            for num in hierarchy[level]:
+                curr_node_name = f"Node {num}"
+                graph.add_node(curr_node_name, node_user_map[curr_node_name])
+                parent_level = level-1
+                # randomly choose a node a level above in the hierarchy as the parent
+                parent_node_num = random.choice(hierarchy[parent_level])
+                parent_node_name = f"Node {parent_node_num}"
+                graph.add_edge(parent_node_name, curr_node_name)
+    
+    # for node in graph.node_list:
+        # print(f"node: {node}, edges: {graph.node_list[node].edges.keys()}")
+    return graph
+
+def setup_and_run_experiment_once(node_num, user_num):
+    """
+    Do all the setup to for single instance of the experiment.
+    Will print out times for each decryption and memory profile for graph creation.
+
+    Args:
+        node_num (int): Define number of nodes (and also number of objects)
+        user_num (int): Define number of user per node
+    
+    Returns:
+        N/A
+    """
+
+    # Generate DAG adjaceny matrix for node_num nodes
+    # adjaceny_matrix = np.array([[1, 1, 1, 0],
+    #                             [0, 1, 0, 1],
+    #                             [0, 0, 1, 1],
+    #                             [0, 0, 0, 1]])
+
+    # Create users for each node
+    node_names = ["Node " + str(i) for i in range(node_num)]
     node_user_map = {}
     for node_name in node_names:
         users = [User(md5(os.urandom(4)).hexdigest(),
-                 md5(os.urandom(16)).hexdigest()) for i in range(10)]
+                 md5(os.urandom(16)).hexdigest()) for i in range(user_num)]
         node_user_map[node_name] = users
 
-    graph = DAG(adjaceny_matrix, node_names, node_user_map)
-
+    # Create dataset with at least one column for each node
     df = pd.read_csv("breast-cancer.data")
     for i in range(df.shape[0]):
         for j in df.columns:
             if type(df.ix[i, j]) != str:
                 df.ix[i, j] = str(df.ix[i, j])
-
-    columns = df.columns.values.tolist()
     data = df.values
+    copies = np.ceil(node_num / 10)
+    if copies > 1:
+        # need to make sure copies is an int for range
+        for i in range(int(copies)):
+            data = np.hstack([data, data])
+    columns = ["Object " + str(i) for i in range(data.shape[1])]
+    node_obj_li = np.array_split(np.array(columns), node_num)
+    node_obj_li = [li.tolist() for li in node_obj_li]
 
-    print("Objects:" + str(columns))
+    # Get node-to-object map for encryption and decryption_v1
     node_object_map = {}
-    node_object_map["CEO"] = ["Object 1", "Object 2", "Object 3"]
-    node_object_map["Manager"] = ["Object 4", "Object 5"]
-    node_object_map["Team Lead"] = ["Object 6", "Object 7"]
-    node_object_map["Worker"] = ["Object 8", "Object 9", "Object 10"]
-    # encrypted_data = encrypt_data_v1(graph, deepcopy(data), columns, node_object_map)
-    # decrypted_data = decrypt_data_v1(graph, data, columns, "CEO", "Manager", node_object_map)
-    # assert(np.array_equal(data, decrypted_data_v2))
-    encrypted_data_v2 = encrypt_data_v2(graph, deepcopy(data), columns, node_object_map)
-    decrypted_data_v2 = decrypt_data_v2(graph, encrypted_data_v2, columns, "CEO")
-    assert(np.array_equal(data, decrypted_data_v2))
+    for i in range(node_num):
+        node_object_map[node_names[i]] = node_obj_li[i]
+
+    # create the graph randomly
+    graph = create_random_dag(node_names, node_user_map)
+    # Measure the size of this graph
+    print(f"Size of graph in memory: {asizeof.asizeof(graph)} bytes")
+
+    # Get random target column to decrypt
+    target_col = np.random.choice(columns)
+    # Get random source node
+    source_node = np.random.choice(node_names)
+    # Ensure random source node can actually decrypt the random target column
+    compatible = False
+    while not compatible:
+        target_node = ""
+        for node_name, cols in node_object_map.items():
+            if target_col in cols:
+                target_node = node_name
+                break
+        path = graph.get_path(source_node, target_node)
+        if len(path) > 0:
+            compatible = True
+        else:
+            target_col = np.random.choice(columns)
 
 
-    '''
-    acp_dict = {}
-    roles = ["CEO", "Manager", "Team Lead", "Worker"]
-    for role in roles:
-        users = [User(md5(os.urandom(4)).hexdigest(),
-                 md5(os.urandom(16)).hexdigest()) for i in range(10)]
-        acp_dict[role] = ACP(role, users)
-        # call node constructor here with role name and users (rather than ACP constructor)
+    # Method 1
+    encrypted_data = encrypt_data_v1(
+        graph, deepcopy(data), columns, node_object_map
+    )
+    # Time this function
+    decrypted_data = decrypt_data_v1(
+        graph,
+        encrypted_data,
+        columns, source_node,
+        target_col,
+        node_object_map
+    )
 
-    # CEO node data
-    SID_i = acp_dict["CEO"].users[0].get_SID()
-    s_i = acp_dict["CEO"].evaluate_polynomial(SID_i)
-    for user in acp_dict["CEO"].users:
-        SID_j = user.get_SID()
-        assert(s_i == acp_dict["CEO"].evaluate_polynomial(SID_j))
-    l_i = md5(os.urandom(16)).hexdigest()
-    t_i = hash_fun(s_i, l_i, val_opt="0")
-    k_i = hash_fun(s_i, l_i, val_opt="1")
+    # Method 2
+    encrypted_data_v2 = encrypt_data_v2(
+        graph, deepcopy(data), columns, node_object_map
+    )
+    # Time this function
+    decrypted_data_v2 = decrypt_data_v2(
+        graph, encrypted_data_v2, columns, source_node, target_col
+    )
 
-    # Manager node data
-    SID_i = acp_dict["Manager"].users[0].get_SID()
-    s_j = acp_dict["Manager"].evaluate_polynomial(SID_i)
-    for user in acp_dict["Manager"].users:
-        SID_j = user.get_SID()
-        assert(s_j == acp_dict["Manager"].evaluate_polynomial(SID_j))
-    l_j = md5(os.urandom(16)).hexdigest()
-    t_j = hash_fun(s_j, l_j, val_opt="0")
-    k_j = hash_fun(s_j, l_j, val_opt="1")
 
-    # edge (CEO, Manager) data
-    r_ij = hash_fun(t_i, l_j)
-    y_ij = encrypt(r_ij, t_j, k_j)
 
-    # check it worked
-    t_i = hash_fun(s_i, l_i, val_opt="0")
-    r_ij = hash_fun(t_i, l_j)
-    print(t_j)
-    print(k_j)
-
-    t_j, k_j = decrypt(r_ij, y_ij)
-    print(t_j)
-    print(k_j)
-
-    # testing DAG
-    graph = DAG(adjaceny_matrix)
-    graph.create_graph()
-    # print the graph
-    for key, node_obj in graph.node_list.items():
-        print(f"{key}: {node_obj.edges.keys()}")
-    '''
+if __name__ == "__main__":
+    """
+    Run this program in terminal and use tee to output results to file for parsing.
+    example: "python main.py | tee raw_unparsed_experiment_data.txt"
+    Then run: "python parse_experiment_data.py"
+    To get the two csv files for the experiments
+    """
+    highest_node_num = 1000
+    # possible inputs for node_num
+    # start at 10 and step up by 10 each time till reaching highest node num
+    inputs = [x for x in range(10, highest_node_num+1, 10)]
+    user_num = 100
+    for input_value in inputs:
+        print(f"Running experiment with {input_value} nodes, {user_num} users per node")
+        # need to run each input value 3 times, then take average
+        for i in range(3):
+            print(f"Run number {i+1}")
+            setup_and_run_experiment_once(input_value, user_num)
+        print(f"Ending experiment with {input_value} nodes")
