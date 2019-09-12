@@ -22,41 +22,44 @@ class User:
 
 
 class ACP:
-    def __init__(self, secret):
+    def _init_(self, secret):
         self.z = hex(number.getRandomInteger(128))
         self.q = hex(number.getPrime(128))
         self.__K = secret
+        self.coefficients = []
 
         # Make sure key value is smaller than prime used for modulo
-        while int(self.__K, 16) < int(self.q, 16):
-            self.__K = hex(number.getRandomInteger(128))
+        while int(self.__K, 16) >= int(self.q, 16):
+            self.q = hex(number.getRandomInteger(128))
 
     def get_coefficients(self, users):
         SIDs = []
         for user in users:
             message = user.get_SID() + self.z
             SIDs.append(-int(md5(message.encode("utf-8")).hexdigest(), 16))
-
         coefficients = []
-        for i in range(0, len(SIDs) + 1):
-            SID_comb = combinations(SIDs, i)
-            poly_term = 0
-            for comb in SID_comb:
-                product = 1
-                for term in comb:
-                    product = (product * term) % int(self.q, 16)
-                poly_term = (poly_term + product) % int(self.q, 16)
-            coefficients.append(poly_term)
+        coefficients.append(1)
+        iq = int(self.q, 16)
+        for i in range(0, len(SIDs)):
+            coefficients.append(0)
+            for j in range(1, len(coefficients)):
+                coefficients[len(coefficients) - j] = coefficients[len(coefficients) - j] + coefficients[len(coefficients) - j - 1] * SIDs[i] % iq
 
         coefficients[-1] = (coefficients[-1] +
-                            int(self.__K, 16)) % int(self.q, 16)
-
+                            int(self.__K, 16)) % iq
+        self.coefficients = coefficients
         return coefficients
 
-    def evaluate_polynomial(self, coefficients, SID):
+    def evaluate_polynomial(self, SID):
         message = SID + self.z
         x = int(md5(message.encode("utf-8")).hexdigest(), 16)
-        return hex(np.poly1d(coefficients)(x) % int(self.q, 16))
+        cur = 1
+        res = 0
+        iq = int(self.q, 16)
+        for i in range(0, len(self.coefficients)):
+            res = (res + cur * self.coefficients[len(self.coefficients) - 1 - i] % iq) % iq
+            cur = cur * x % iq
+        return hex(res)[2:]
 
     """
     def __update_secret(self):
