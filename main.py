@@ -11,6 +11,7 @@ from Crypto.Cipher import AES
 import random
 from decorators import timer
 from pympler import asizeof
+import sys
 
 
 def encrypt_data_v1(graph, data, columns, node_object_map):
@@ -281,11 +282,16 @@ if __name__ == "__main__":
     Then run: "python parse_experiment_data.py"
     To get the two csv files for the experiments
     """
-    highest_node_num = 1000
+    # change for each section of experiment being run
+    highest_node_num = 100
     # possible inputs for node_num
     # start at 10 and step up by 10 each time till reaching highest node num
     inputs = [x for x in range(10, highest_node_num+1, 10)]
     user_num = 100
+    # capture system out
+    stdout_ = sys.stdout
+    # change the name of the file to the amount of nodes being used
+    sys.stdout = open("exp10-100.txt", "w")
     for input_value in inputs:
         print(f"Running experiment with {input_value} nodes, {user_num} users per node")
         # need to run each input value 3 times, then take average
@@ -293,3 +299,5 @@ if __name__ == "__main__":
             print(f"Run number {i+1}")
             setup_and_run_experiment_once(input_value, user_num)
         print(f"Ending experiment with {input_value} nodes")
+    # stop capture system out
+    sys.stdout = stdout_
