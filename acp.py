@@ -22,7 +22,7 @@ class User:
 
 
 class ACP:
-    def _init_(self, secret):
+    def __init__(self, secret):
         self.z = hex(number.getRandomInteger(128))
         self.q = hex(number.getPrime(128))
         self.__K = secret
